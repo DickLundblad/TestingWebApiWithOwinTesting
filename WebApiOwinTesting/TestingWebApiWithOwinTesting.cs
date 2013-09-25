@@ -17,6 +17,7 @@
         [Fact]
         public async Task Can_invoke_message_controller()
         {
+            // OwinTestServer is pure-in memory and has no environmental dependencies
             OwinTestServer owinTestServer = OwinTestServer.Create(app => new Startup().Configuration(app));
             HttpClient client = owinTestServer.CreateHttpClient();
             HttpResponseMessage response = await client.GetAsync("http://localhost/api/message");
@@ -24,7 +25,7 @@
             response.StatusCode.Should().Be(HttpStatusCode.OK);
 
             string content = await response.Content.ReadAsStringAsync();
-            var greeting = new JsonSerializer().Deserialize<Greeting>(new JsonTextReader(new StringReader(content)));
+            var greeting = JsonConvert.DeserializeObject<Greeting>(content);
 
             greeting.Text.Should().Be("Hello, World!");
         }
@@ -34,7 +35,9 @@
     {
         public void Configuration(IAppBuilder app)
         {
-            SignatureConversions.AddConversions(app); // supports Microsoft.Owin.OwinMiddleWare (I'd prefer not to have this here)
+            // supports Microsoft.Owin.OwinMiddleWare. I'd prefer not to have this here but not sure I want
+            // to depend on Microsoft.Owin either.
+            SignatureConversions.AddConversions(app); 
             var config = new MyHttpConfiguration();
             app.UseWebApi(config);
         }
